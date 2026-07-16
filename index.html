@@ -80,7 +80,7 @@
             outline: none;
             transition: all 0.3s ease;
             font-family: inherit;
-            appearance: none; /* 移除預設箭頭以便自訂 */
+            appearance: none;
         }
 
         input[type="text"]:focus, select:focus {
@@ -141,7 +141,7 @@
         <div class="input-group">
             <label for="quality">畫質 / 音質</label>
             <select id="quality">
-                <!-- 選項會由 JavaScript 動態生成 -->
+                <!-- 選項由 JS 動態生成 -->
             </select>
         </div>
 
@@ -154,30 +154,29 @@
             updateQualityOptions();
         });
 
-        // 根據選擇的格式（影片或音樂）切換選項
+        // 根據選擇的格式切換選項
         function updateQualityOptions() {
             const format = document.getElementById('format').value;
             const qualitySelect = document.getElementById('quality');
             
-            // 清空現有選項
             qualitySelect.innerHTML = '';
 
             if (format === 'video') {
                 const videoOptions = ['1080p (FHD)', '720p (HD)', '480p', '360p'];
                 videoOptions.forEach(opt => {
-                    let newOption = new Option(opt, opt.split(' ')[0]);
+                    let newOption = new Option(opt, opt.split('p')[0]); // 擷取數字部分傳給後端
                     qualitySelect.add(newOption);
                 });
             } else if (format === 'audio') {
                 const audioOptions = ['320 kbps (高音質)', '256 kbps', '128 kbps (標準)'];
                 audioOptions.forEach(opt => {
-                    let newOption = new Option(opt, opt.split(' ')[0]);
+                    let newOption = new Option(opt, opt.split(' ')[0]); // 擷取數字部分傳給後端
                     qualitySelect.add(newOption);
                 });
             }
         }
 
-        // 處理下載邏輯
+        // 處理與 Oracle Cloud 伺服器的連線與下載邏輯
         function handleDownload() {
             const url = document.getElementById('url').value;
             const format = document.getElementById('format').value;
@@ -189,24 +188,41 @@
                 return;
             }
 
-            // 改變按鈕狀態為處理中
             btn.disabled = true;
-            btn.innerText = '處理中，請稍候...';
+            btn.innerText = '正在解析影片，請稍候...';
 
-            /*
-            ===============================================================
-            ⚠️ 重要提示：這裡需要串接後端 API！
-            因為 GitHub Pages 不能跑後端程式，你需要呼叫第三方的 YouTube 下載 API。
-            例如： fetch(`https://your-api.com/download?url=${url}&format=${format}`)
-            ===============================================================
-            */
+            // 使用你的專屬 Oracle Cloud IP
+            const backendIp = '146.245.222.134'; 
+            const apiUrl = `http://${backendIp}:5000/api/download?url=${encodeURIComponent(url)}&format=${format}&quality=${quality}`;
 
-            // 這裡模擬 API 請求的延遲 (3秒後恢復原狀)
-            setTimeout(() => {
-                alert(`(模擬) 準備下載：\n網址: ${url}\n格式: ${format}\n品質: ${quality}\n\n*實際上這裡需要串接 API 才能真正下載檔案*`);
-                btn.disabled = false;
-                btn.innerText = '開始下載';
-            }, 2000);
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('伺服器回應錯誤');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert('解析失敗: ' + data.error);
+                    } else {
+                        // 成功取得下載連結，觸發瀏覽器下載
+                        const a = document.createElement('a');
+                        a.href = data.download_url;
+                        a.download = data.title || 'download';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                })
+                .catch(error => {
+                    alert('連線至下載伺服器失敗，請確認你的 Oracle Cloud 服務已啟動。');
+                    console.error(error);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = '開始下載';
+                });
         }
     </script>
 </body>
