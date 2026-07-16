@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Downloader</title>
+    <style>
+        /* 蘋果風格基礎設定 */
+        :root {
+            --apple-bg: #f5f5f7;
+            --apple-text: #1d1d1f;
+            --apple-blue: #0071e3;
+            --apple-blue-hover: #0077ED;
+            --apple-card-bg: rgba(255, 255, 255, 0.7);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--apple-bg);
+            color: var(--apple-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #ffffff 0%, #f5f5f7 100%);
+        }
+
+        /* 玻璃擬物化卡片 */
+        .container {
+            background: var(--apple-card-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            font-size: 14px;
+            color: #86868b;
+            margin-bottom: 30px;
+        }
+
+        /* 輸入框與下拉選單 */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #86868b;
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            appearance: none; /* 移除預設箭頭以便自訂 */
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        /* 下載按鈕 */
+        button {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background-color: var(--apple-blue);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--apple-blue-hover);
+            transform: scale(0.98);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            background-color: #a1a1a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>YouTube Downloader</h1>
+        <p class="subtitle">貼上網址，輕鬆下載高畫質影片或音樂。</p>
+
+        <div class="input-group">
+            <label for="url">YouTube 影片網址</label>
+            <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label for="format">下載格式</label>
+            <select id="format" onchange="updateQualityOptions()">
+                <option value="video">影片 (MP4)</option>
+                <option value="audio">音樂 (MP3)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="quality">畫質 / 音質</label>
+            <select id="quality">
+                <!-- 選項會由 JavaScript 動態生成 -->
+            </select>
+        </div>
+
+        <button id="downloadBtn" onclick="handleDownload()">開始下載</button>
+    </div>
+
+    <script>
+        // 初始化載入畫質選項
+        document.addEventListener('DOMContentLoaded', () => {
+            updateQualityOptions();
+        });
+
+        // 根據選擇的格式（影片或音樂）切換選項
+        function updateQualityOptions() {
+            const format = document.getElementById('format').value;
+            const qualitySelect = document.getElementById('quality');
+            
+            // 清空現有選項
+            qualitySelect.innerHTML = '';
+
+            if (format === 'video') {
+                const videoOptions = ['1080p (FHD)', '720p (HD)', '480p', '360p'];
+                videoOptions.forEach(opt => {
+                    let newOption = new Option(opt, opt.split(' ')[0]);
+                    qualitySelect.add(newOption);
+                });
+            } else if (format === 'audio') {
+                const audioOptions = ['320 kbps (高音質)', '256 kbps', '128 kbps (標準)'];
+                audioOptions.forEach(opt => {
+                    let newOption = new Option(opt, opt.split(' ')[0]);
+                    qualitySelect.add(newOption);
+                });
+            }
+        }
+
+        // 處理下載邏輯
+        function handleDownload() {
+            const url = document.getElementById('url').value;
+            const format = document.getElementById('format').value;
+            const quality = document.getElementById('quality').value;
+            const btn = document.getElementById('downloadBtn');
+
+            if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+                alert('請輸入有效的 YouTube 網址！');
+                return;
+            }
+
+            // 改變按鈕狀態為處理中
+            btn.disabled = true;
+            btn.innerText = '處理中，請稍候...';
+
+            /*
+            ===============================================================
+            ⚠️ 重要提示：這裡需要串接後端 API！
+            因為 GitHub Pages 不能跑後端程式，你需要呼叫第三方的 YouTube 下載 API。
+            例如： fetch(`https://your-api.com/download?url=${url}&format=${format}`)
+            ===============================================================
+            */
+
+            // 這裡模擬 API 請求的延遲 (3秒後恢復原狀)
+            setTimeout(() => {
+                alert(`(模擬) 準備下載：\n網址: ${url}\n格式: ${format}\n品質: ${quality}\n\n*實際上這裡需要串接 API 才能真正下載檔案*`);
+                btn.disabled = false;
+                btn.innerText = '開始下載';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
